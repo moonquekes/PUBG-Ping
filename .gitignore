@@ -1,8 +1,13 @@
 __pycache__/
 *.pyc
 data/
-assets/
+assets/custom/
 *.exe
 *.exe.config
 *.user
 extraction-cache/
+preview.png
+settings-preview.png
+test-report.txt
+test-failure.txt
+smoke-report.txt

@@ -4,43 +4,41 @@
 
 默认打开「表情符号」页。触发键默认是 F8。
 
-## 这个仓库里有什么
+## 直接使用
 
-只有最终用到的源码：
+Windows 10/11 x64，需要系统自带的 .NET Framework 4.8。
+
+下载 [Releases](https://github.com/moonquekes/PUBG-Ping/releases/latest) 里的 `PUBG-Ping-windows.zip`，解压后双击 `PUBG-Ping-Learning.exe`。压缩包里已经有运行需要的图标、提示音和轮盘配置。
+
+也可以克隆这个仓库后自己编译。素材已经在 `assets/game`，不用先装 PUBG：
+
+```powershell
+.\build.ps1
+.\PUBG-Ping-Learning.exe
+```
+
+## 这个仓库里有什么
 
 - `source/TacticalPing.cs`：桌面程序，含输入、轮盘、绘制和播放。
 - `source/app.manifest`：普通用户权限和 DPI。
 - `build.ps1`：用 Windows 自带的 C# 编译器生成 exe。
-- `source/extraction/`：从本机 PUBG 安装只读导出图标、提示音和 24 槽配置的脚本。
+- `assets/game/`：24 个信号会用到的图标、世界标记、15 段提示音，以及 `catalog.json`。
+- `source/extraction/`：从本机 PUBG 安装重新导出这些素材的脚本。换游戏版本时才需要。
 - `使用说明.txt`：操作说明。
 
-不包含这些东西：
+不包含查找密钥时克隆过的第三方仓库、手绘中间版、提取缓存、本机密钥，以及这次没有挂到 24 个槽位上的图片。编译出的 exe 放在 Releases 里，不进 git。
 
-- 从游戏里导出的 PNG、WAV、目录 JSON。它们不是代码，版权仍属于原权利人，请留在你自己的机器上。
-- 编译出的 exe。放在仓库的 Releases 里，不进 git。
-- 查找密钥时克隆过的第三方仓库、手绘中间版、提取缓存和本机密钥文件。
+## 重新提取
 
-## 编译
-
-需要 Windows 10/11 x64 和系统自带的 .NET Framework 4.8，不需要 Visual Studio。
-
-```powershell
-.\build.ps1
-```
-
-生成的 `PUBG-Ping-Learning.exe` 要和 `assets\game` 放在同一套目录里才能启动。素材用下面的提取脚本在本机生成。
-
-## 本机素材
-
-先完全退出正在运行的程序，再在 PowerShell 里执行：
+只有游戏更新后素材对不上时才需要。先完全退出正在运行的程序，本机要有 PUBG、Python 3.9+、Pillow 和 cryptography：
 
 ```powershell
 .\source\extraction\extract-assets.ps1 -GameRoot 'D:\SteamLibrary\steamapps\common\PUBG'
 ```
 
-脚本只读游戏文件。Oodle 和 vgmstream 会在缓存目录里按固定版本下载，不会写进本仓库。密钥写到 `data/extraction-cache/local-pak-key.hex`，不要提交。
+脚本只读游戏文件。Oodle 和 vgmstream 会下载到 `data/extraction-cache`，不会写进仓库。密钥写到 `data/extraction-cache/local-pak-key.hex`，不要提交。
 
-已在本机 Steam buildid 25595147 上跑通。换游戏版本后不保证资源路径还一样。
+这套素材来自本机 Steam buildid 25595147。换版本后不保证资源路径还一样。
 
 ## 参考了哪些仓库
 
@@ -72,4 +70,4 @@
 
 应用和提取脚本使用 MIT 许可证，见 `LICENSE`。
 
-这不覆盖 PUBG 的图标、文字、音效，也不表示本程序得到 KRAFTON / PUBG 的认可。不要把导出的游戏素材或提取缓存推到公开仓库。
+这不覆盖 `assets/game` 里的 PUBG 图标、文字和音效，那些权利仍属于 KRAFTON / PUBG。本程序没有得到官方认可。提取缓存和密钥不要提交。
