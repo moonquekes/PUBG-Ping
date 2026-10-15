@@ -9,7 +9,7 @@ $paks = Join-Path $GameRoot 'TslGame\Content\Paks'
 if (-not (Test-Path -LiteralPath $paks)) { throw 'PUBG Paks directory was not found.' }
 $pythonExe = (Get-Command $Python -ErrorAction Stop).Source
 & $pythonExe -c 'import PIL, cryptography'
-if ($LASTEXITCODE -ne 0) { throw 'Python packages Pillow and cryptography are required. See README.txt.' }
+if ($LASTEXITCODE -ne 0) { throw 'Python packages Pillow and cryptography are required. See README.md.' }
 New-Item -ItemType Directory -Force -Path $cache | Out-Null
 $oodle = Join-Path $cache 'oodle.zip'
 $vgm = Join-Path $cache 'vgmstream.zip'

@@ -94,6 +94,7 @@ namespace TacticalPing
         [DataMember] public double Radius = 182;
         [DataMember] public double Duration = 2.8;
         [DataMember] public int LastPage = 2; // Emoji page. The wheel opens here until the user changes it.
+        [DataMember] public string OnClose = "ask"; // ask, tray, or exit.
         [DataMember] public List<AssetOverride> Assets = new List<AssetOverride>();
         internal void Normalize()
         {
@@ -101,6 +102,7 @@ namespace TacticalPing
             Radius = Logic.Clamp(Radius, 145, 220, 182);
             Duration = Logic.Clamp(Duration, 1, 5, 2.8);
             LastPage = LastPage >= 0 && LastPage < 3 ? LastPage : 2;
+            if (OnClose != "tray" && OnClose != "exit") OnClose = "ask";
             if (Assets == null) Assets = new List<AssetOverride>();
             Assets = Assets.Where(a => a != null && Catalog.Find(a.Id) != null)
                 .GroupBy(a => a.Id).Select(g => g.First()).Take(24).ToList();
@@ -579,7 +581,7 @@ namespace TacticalPing
         private HwndSource sink;
         private Forms.NotifyIcon tray;
         private Forms.ToolStripMenuItem pauseItem;
-        private bool captured, cancelled, swallowRightUp, quitting;
+        private bool captured, cancelled, swallowRightUp, quitting, closePromptOpen;
         private DateTime openedAt, foregroundChecked;
         private IntPtr checkedForeground;
         private bool checkedBlocked;
@@ -618,7 +620,7 @@ namespace TacticalPing
             var menu = new Forms.ContextMenuStrip();
             menu.Items.Add("设置与预览", null, delegate { Queue(ShowSettings); });
             pauseItem = new Forms.ToolStripMenuItem(); pauseItem.Click += delegate { Queue(Toggle); }; menu.Items.Add(pauseItem);
-            menu.Items.Add("退出", null, delegate { Queue(delegate { Application.Current.Shutdown(); }); });
+            menu.Items.Add("退出", null, delegate { Queue(Exit); });
             tray.ContextMenuStrip = menu; tray.DoubleClick += delegate { Queue(ShowSettings); }; tray.Visible = true;
             UpdateTray();
             Microsoft.Win32.SystemEvents.DisplaySettingsChanged += DisplayChanged;
@@ -889,11 +891,75 @@ namespace TacticalPing
                     Background = Art.Brush("#11151B"), Foreground = Brushes.WhiteSmoke };
                 settingsWindow.Content = SettingsUi.Build(this);
                 settingsWindow.Closing += delegate(object s, System.ComponentModel.CancelEventArgs e) {
-                    if (!quitting) { e.Cancel = true; settingsWindow.Hide(); }
+                    if (quitting) return;
+                    e.Cancel = true;
+                    settingsWindow.Dispatcher.BeginInvoke(new Action(FinishClose));
                 };
             }
             settingsWindow.Show(); if (settingsWindow.WindowState == WindowState.Minimized) settingsWindow.WindowState = WindowState.Normal;
             settingsWindow.Activate();
+        }
+        private void FinishClose()
+        {
+            if (quitting || settingsWindow == null || closePromptOpen) return;
+            bool ask = Config.OnClose != "tray" && Config.OnClose != "exit";
+            if (ask) closePromptOpen = true;
+            string choice;
+            try { choice = ask ? PromptClose() : Config.OnClose; }
+            finally { closePromptOpen = false; }
+            if (choice == "exit") Exit();
+            else if (choice == "tray") settingsWindow.Hide();
+        }
+        private string PromptClose()
+        {
+            var dialog = new Window {
+                Title = "PUBG PING", Width = 420, SizeToContent = SizeToContent.Height, ResizeMode = ResizeMode.NoResize,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner, Owner = settingsWindow, ShowInTaskbar = false,
+                Background = Art.Brush("#11151B"), Foreground = Brushes.WhiteSmoke, FontFamily = new FontFamily("Microsoft YaHei UI"),
+                Icon = Brand.WindowIcon()
+            };
+            var body = new StackPanel { Margin = new Thickness(22, 18, 22, 18) };
+            body.Children.Add(new TextBlock { Text = "关闭 PUBG PING", FontSize = 18, FontWeight = FontWeights.SemiBold, Foreground = Brushes.WhiteSmoke });
+            body.Children.Add(new TextBlock { Text = "最小化到托盘后仍可按住热键发送。完全退出会卸掉监听。", Margin = new Thickness(0, 8, 0, 0), TextWrapping = TextWrapping.Wrap, Foreground = Art.Brush("#A5B0BE") });
+            var remember = new CheckBox { Content = "不再询问", Margin = new Thickness(0, 14, 0, 16), Foreground = Brushes.WhiteSmoke };
+            body.Children.Add(remember);
+            var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+            string choice = null;
+            Action<string> pick = delegate(string value) {
+                choice = value;
+                if (remember.IsChecked == true) { Config.OnClose = value; Save(); }
+                dialog.DialogResult = true;
+            };
+            row.Children.Add(CloseButton("最小化到托盘", delegate { pick("tray"); }, true));
+            row.Children.Add(CloseButton("完全退出", delegate { pick("exit"); }, false));
+            body.Children.Add(row);
+            dialog.Content = body;
+            return dialog.ShowDialog() == true ? choice : null;
+        }
+        private static Button CloseButton(string text, Action action, bool accent)
+        {
+            var button = new Button {
+                Content = text, Margin = new Thickness(8, 0, 0, 0), Padding = new Thickness(14, 7, 14, 7), BorderThickness = new Thickness(0),
+                Background = Art.Brush(accent ? "#DCC073" : "#2A313C"), Foreground = Art.Brush(accent ? "#1A1E25" : "#F1F3F5"),
+                Cursor = System.Windows.Input.Cursors.Hand
+            };
+            button.Click += delegate { action(); };
+            return button;
+        }
+        internal void Exit()
+        {
+            quitting = true;
+            if (Application.Current != null) Application.Current.Shutdown();
+        }
+        internal void OpenGameAssets()
+        {
+            string dir = Assets.GameRoot;
+            if (!Directory.Exists(dir))
+            {
+                MessageBox.Show("没有找到素材文件夹：\n" + dir + "\n\n它在程序旁边的 assets\\game，不是这台电脑的 PUBG 安装目录。", "PUBG PING");
+                return;
+            }
+            Process.Start("explorer.exe", "\"" + dir + "\"");
         }
         public void Dispose()
         {
@@ -991,10 +1057,11 @@ namespace TacticalPing
             var note = new StackPanel();
             note.Children.Add(Text("独立桌面工具，不是 PUBG 插件", 14, "#DCC073"));
             note.Children.Add(Text("运行时不读取游戏、不修改文件、不注入进程、不联网、不自动开机启动。建议游戏前完全退出；未做反作弊认证。", 11.5, "#A5B0BE"));
-            note.Children.Add(Text("素材来自本机 PUBG，版权归原权利人；桌面轮盘与动画独立实现，并非游戏引擎画面。关闭窗口仍驻留托盘。", 11.5, "#A5B0BE"));
+            note.Children.Add(Text("点窗口关闭时可选最小化到托盘或完全退出，并可勾选不再询问。托盘里的「退出」会直接结束程序。", 11.5, "#A5B0BE"));
+            note.Children.Add(Text("「打开原始素材」打开的是这个程序旁边的 assets\\game，不是 PUBG 的安装目录。", 11.5, "#A5B0BE"));
             var bottom = new WrapPanel();
-            bottom.Children.Add(Button("打开原始素材", delegate { Process.Start("explorer.exe", "\"" + app.Assets.GameRoot + "\""); }));
-            bottom.Children.Add(Button("完全退出", delegate { Application.Current.Shutdown(); })); note.Children.Add(bottom);
+            bottom.Children.Add(Button("打开原始素材", app.OpenGameAssets));
+            bottom.Children.Add(Button("完全退出", app.Exit)); note.Children.Add(bottom);
             outer.Children.Add(Card(note));
             return new ScrollViewer { Content = outer, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
                 Background = Art.Brush("#11151B"), FontFamily = new FontFamily("Microsoft YaHei UI"), FontSize = 12 };
@@ -1091,8 +1158,9 @@ namespace TacticalPing
             Check(Logic.CustomPath(App.BaseDir, "enemy.png") != null, "accept local basename");
             var settings = new Settings { Trigger = 1, Radius = double.NaN, Duration = 900, LastPage = -1 };
             settings.Assets.Add(new AssetOverride { Id = "Combat_Slot1", Image = "../foo.png", Sound = "C:\\foo.wav" });
+            settings.OnClose = "nope";
             settings.Normalize();
-            Check(settings.Trigger == 119 && settings.Radius == 182 && settings.Duration == 5 && settings.LastPage == 2, "normalize invalid settings");
+            Check(settings.Trigger == 119 && settings.Radius == 182 && settings.Duration == 5 && settings.LastPage == 2 && settings.OnClose == "ask", "normalize invalid settings");
             Check(new Settings().LastPage == 2 && Catalog.PageNames[2] == "表情符号", "emoji page is the default wheel");
             Check(settings.Assets[0].Image == "" && settings.Assets[0].Sound == "", "sanitize imported filenames");
             Check(Logic.Clamp(double.PositiveInfinity, 1, 5, 2.8) == 2.8, "reject infinity");
