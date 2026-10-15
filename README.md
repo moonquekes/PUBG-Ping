@@ -8,13 +8,13 @@
 
 Windows 10/11 x64，需要系统自带的 .NET Framework 4.8。
 
-下载 [Releases](https://github.com/moonquekes/PUBG-Ping/releases/latest) 里的 `PUBG-Ping-windows.zip`，解压后双击 `PUBG-Ping-Learning.exe`。压缩包里已经有运行需要的图标、提示音和轮盘配置。
+下载 [Releases](https://github.com/moonquekes/PUBG-Ping/releases/latest) 里的 `PUBG-Ping-windows.zip`，解压后双击 `PUBG PING.exe`。压缩包里已经有运行需要的图标、提示音和轮盘配置。
 
 也可以克隆这个仓库后自己编译。素材已经在 `assets/game`，不用先装 PUBG：
 
 ```powershell
 .\build.ps1
-.\PUBG-Ping-Learning.exe
+& '.\PUBG PING.exe'
 ```
 
 ## 这个仓库里有什么

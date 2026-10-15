@@ -465,7 +465,7 @@ namespace TacticalPing
                 Art.Text(d, "移动鼠标选择", new Point(0, 10), 10.5, Art.Brush("#A3ADBA"), true, false);
                 Art.Text(d, "ESC 取消", new Point(0, 29), 9.5, Art.Brush("#737F8F"), true, false);
             }
-            Art.Text(d, "TACTICAL PING   /   " + (wheel.Page + 1).ToString("00"), new Point(0, -226), 10.5, Art.Brush(Art.Amber, 1), true, true);
+            Art.Text(d, "PUBG PING   /   " + (wheel.Page + 1).ToString("00"), new Point(0, -226), 10.5, Art.Brush(Art.Amber, 1), true, true);
             var legend = new StringBuilder();
             for (int p = 0; p < Catalog.PageNames.Length; p++)
             {
@@ -535,7 +535,7 @@ namespace TacticalPing
             WindowStyle = WindowStyle.None; AllowsTransparency = true; Background = Brushes.Transparent;
             Topmost = true; ShowInTaskbar = false; ShowActivated = false; Focusable = false;
             ResizeMode = ResizeMode.NoResize; Content = Canvas;
-            Title = "TacticalPing transparent overlay";
+            Title = "PUBG PING overlay";
             Width = screen.Bounds.Width; Height = screen.Bounds.Height;
             SourceInitialized += delegate {
                 IntPtr h = new WindowInteropHelper(this).Handle;
@@ -601,7 +601,7 @@ namespace TacticalPing
         }
         internal void Start()
         {
-            var p = new HwndSourceParameters("TacticalPing-Learning-Control") { Width = 0, Height = 0, WindowStyle = 0 };
+            var p = new HwndSourceParameters("PUBG-Ping-Control") { Width = 0, Height = 0, WindowStyle = 0 };
             sink = new HwndSource(p); sink.AddHook(Messages);
             HotkeyRegistered = Native.RegisterHotKey(sink.Handle, 1, 0x4003, 0x50);
             if (HotkeyRegistered) PauseShortcut = "Ctrl+Alt+P";
@@ -613,8 +613,8 @@ namespace TacticalPing
             keyProc = KeyHook; mouseProc = MouseHook;
             if (!InstallHooks(true))
                 throw new InvalidOperationException("无法安装桌面输入监听。Win32 错误：" + Marshal.GetLastWin32Error());
-            tray = new Forms.NotifyIcon(); tray.Icon = System.Drawing.SystemIcons.Information;
-            tray.Text = "Tactical Ping · 非官方桌面学习版";
+            tray = new Forms.NotifyIcon(); tray.Icon = Brand.ShellIcon() ?? System.Drawing.SystemIcons.Application;
+            tray.Text = "PUBG PING";
             var menu = new Forms.ContextMenuStrip();
             menu.Items.Add("设置与预览", null, delegate { Queue(ShowSettings); });
             pauseItem = new Forms.ToolStripMenuItem(); pauseItem.Click += delegate { Queue(Toggle); }; menu.Items.Add(pauseItem);
@@ -884,7 +884,7 @@ namespace TacticalPing
         {
             if (settingsWindow == null)
             {
-                settingsWindow = new Window { Title = "Tactical Ping · PUBG 风格桌面学习版（非官方）", Width = 900, Height = 850,
+                settingsWindow = new Window { Title = "PUBG PING", Width = 900, Height = 850, Icon = Brand.WindowIcon(),
                     MinWidth = 760, MinHeight = 650, WindowStartupLocation = WindowStartupLocation.CenterScreen,
                     Background = Art.Brush("#11151B"), Foreground = Brushes.WhiteSmoke };
                 settingsWindow.Content = SettingsUi.Build(this);
@@ -924,9 +924,9 @@ namespace TacticalPing
         internal static FrameworkElement Build(Controller app)
         {
             var outer = new StackPanel { Margin = new Thickness(30, 24, 30, 24), MaxWidth = 960, HorizontalAlignment = HorizontalAlignment.Stretch };
-            outer.Children.Add(Text("LOCAL DESKTOP EXPERIMENT   /   01", 10, "#DCC073"));
-            var title = Text("TACTICAL PING", 31, "#F1F3F5"); title.FontWeight = FontWeights.Bold; outer.Children.Add(title);
-            outer.Children.Add(Text("PUBG 桌面信号 · 非官方学习版 · 本机提取的原始图标 / Wwise 原声", 12, "#A5B0BE"));
+            outer.Children.Add(Text("非官方桌面信号", 10, "#DCC073"));
+            var title = Text("PUBG PING", 31, "#F1F3F5"); title.FontWeight = FontWeights.Bold; outer.Children.Add(title);
+            outer.Children.Add(Text("本机提取的原始图标和提示音", 12, "#A5B0BE"));
             outer.Children.Add(new Border { Height = 17 });
             var status = new StackPanel();
             var state = Text("", 18, "#DCC073"); status.Children.Add(state);
@@ -1046,9 +1046,9 @@ namespace TacticalPing
             d.DrawRectangle(Art.Brush("#11151B"), null, new Rect(0, 0, 1280, 860));
             for (int x = 0; x < 1280; x += 40) d.DrawLine(new Pen(Art.Brush("#17202A"), 1), new Point(x, 0), new Point(x, 860));
             for (int y = 0; y < 860; y += 40) d.DrawLine(new Pen(Art.Brush("#17202A"), 1), new Point(0, y), new Point(1280, y));
-            Art.Text(d, "DESKTOP SIGNAL LAB   /   LOCAL ONLY", new Point(48, 32), 12, Art.Brush(Art.Amber, 1), false, true);
-            Art.Text(d, "TACTICAL PING", new Point(48, 59), 34, Brushes.WhiteSmoke, false, true);
-            Art.Text(d, "本机 PUBG 原始图标 + Wwise 原声 · 原始数据表槽位与中文 · 非官方桌面学习版", new Point(48, 111), 14, Art.Brush("#A5B0BE"), false, false);
+            Art.Text(d, "非官方桌面信号", new Point(48, 32), 12, Art.Brush(Art.Amber, 1), false, true);
+            Art.Text(d, "PUBG PING", new Point(48, 59), 34, Brushes.WhiteSmoke, false, true);
+            Art.Text(d, "本机原始图标和提示音 · 24 个槽位", new Point(48, 111), 14, Art.Brush("#A5B0BE"), false, false);
             double[] cx = { 230, 640, 1050 };
             for (int page = 0; page < 3; page++)
             {
@@ -1180,6 +1180,24 @@ namespace TacticalPing
         }
     }
 
+    internal static class Brand
+    {
+        internal static System.Windows.Media.ImageSource WindowIcon()
+        {
+            using (var icon = ShellIcon())
+            {
+                if (icon == null) return null;
+                var image = Imaging.CreateBitmapSourceFromHIcon(icon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                image.Freeze();
+                return image;
+            }
+        }
+        internal static System.Drawing.Icon ShellIcon()
+        {
+            return System.Drawing.Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        }
+    }
+
     internal sealed class App : Application
     {
         internal static readonly string BaseDir = AppDomain.CurrentDomain.BaseDirectory;
@@ -1220,13 +1238,13 @@ namespace TacticalPing
                     string report = Tests.Run(); File.WriteAllText(Path.Combine(BaseDir, "test-report.txt"), report, Encoding.UTF8); return 0;
                 }
                 app.DispatcherUnhandledException += delegate(object sender, DispatcherUnhandledExceptionEventArgs e) {
-                    Log(e.Exception); MessageBox.Show(e.Exception.Message, "Tactical Ping 错误"); app.Shutdown(1); e.Handled = true;
+                    Log(e.Exception); MessageBox.Show(e.Exception.Message, "PUBG PING"); app.Shutdown(1); e.Handled = true;
                 };
                 app.Startup += delegate {
-                    app.mutex = new Mutex(true, "Local\\TacticalPingLearning_20261015", out app.ownsMutex);
+                    app.mutex = new Mutex(true, "Local\\PUBGPing_20261015", out app.ownsMutex);
                     if (!app.ownsMutex)
                     {
-                        Native.PostMessage(Native.FindWindow(null, "TacticalPing-Learning-Control"), 0x8001, IntPtr.Zero, IntPtr.Zero);
+                        Native.PostMessage(Native.FindWindow(null, "PUBG-Ping-Control"), 0x8001, IntPtr.Zero, IntPtr.Zero);
                         app.Shutdown(); return;
                     }
                     app.controller = new Controller(Load()); app.controller.Start();
@@ -1259,7 +1277,7 @@ namespace TacticalPing
             }
             catch (Exception e)
             {
-                Log(e); if (!Testing) MessageBox.Show(e.Message, "Tactical Ping 启动失败");
+                Log(e); if (!Testing) MessageBox.Show(e.Message, "PUBG PING");
                 try { File.WriteAllText(Path.Combine(BaseDir, "test-failure.txt"), e.ToString(), Encoding.UTF8); } catch { }
                 return 1;
             }
